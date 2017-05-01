@@ -22,6 +22,7 @@ require 'octokit/client/feeds'
 require 'octokit/client/gists'
 require 'octokit/client/gitignore'
 require 'octokit/client/hooks'
+require 'octokit/client/integrations'
 require 'octokit/client/issues'
 require 'octokit/client/labels'
 require 'octokit/client/legacy_search'
@@ -42,6 +43,7 @@ require 'octokit/client/refs'
 require 'octokit/client/releases'
 require 'octokit/client/repositories'
 require 'octokit/client/repository_invitations'
+require 'octokit/client/reviews'
 require 'octokit/client/say'
 require 'octokit/client/search'
 require 'octokit/client/service_status'
@@ -76,6 +78,7 @@ module Octokit
     include Octokit::Client::Gists
     include Octokit::Client::Gitignore
     include Octokit::Client::Hooks
+    include Octokit::Client::Integrations
     include Octokit::Client::Issues
     include Octokit::Client::Labels
     include Octokit::Client::LegacySearch
@@ -96,6 +99,7 @@ module Octokit
     include Octokit::Client::Releases
     include Octokit::Client::Repositories
     include Octokit::Client::RepositoryInvitations
+    include Octokit::Client::Reviews
     include Octokit::Client::Say
     include Octokit::Client::Search
     include Octokit::Client::ServiceStatus
@@ -126,6 +130,7 @@ module Octokit
       # mask password
       inspected = inspected.gsub! @password, "*******" if @password
       inspected = inspected.gsub! @management_console_password, "*******" if @management_console_password
+      inspected = inspected.gsub! @bearer_token, '********' if @bearer_token
       # Only show last 4 of token, secret
       if @access_token
         inspected = inspected.gsub! @access_token, "#{'*'*36}#{@access_token[36..-1]}"
@@ -186,6 +191,14 @@ module Octokit
       @access_token = value
     end
 
+    # Set Bearer Token for authentication
+    #
+    # @param value [String] JWT
+    def bearer_token=(value)
+      reset_agent
+      @bearer_token = value
+    end
+
     # Set OAuth app client_id
     #
     # @param value [String] 20 character GitHub OAuth app client_id
@@ -212,6 +225,8 @@ module Octokit
           http.basic_auth(@login, @password)
         elsif token_authenticated?
           http.authorization 'token', @access_token
+        elsif bearer_authenticated?
+          http.authorization 'Bearer', @bearer_token
         end
         http.headers['accept'] = options[:accept] if options.key?(:accept)
       end
